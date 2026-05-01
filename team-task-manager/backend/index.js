@@ -62,12 +62,19 @@ app.use((err, _req, res, _next) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-const port = Number(process.env.PORT) || 8080;
+const PORT_ENV = process.env.PORT;
+const port = Number(PORT_ENV) || 8080;
+
+console.log(
+  `PORT env var: ${PORT_ENV !== undefined ? PORT_ENV : "(not set)"} → listening on port ${port}`,
+);
 
 initSchema()
   .then(() => {
     app.listen(port, "0.0.0.0", () => {
-      console.log(`✓ Team Task Manager API listening on port ${port}`);
+      console.log(
+        `✓ Team Task Manager API listening on 0.0.0.0:${port}`,
+      );
     });
   })
   .catch((err) => {

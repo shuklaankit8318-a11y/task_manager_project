@@ -1,89 +1,101 @@
-# Team Task Manager — Deployment Bundle
+# Team Task Manager
 
-Two folders, two deployments:
-
-| Folder | Deploy to | Stack |
-|--------|-----------|-------|
-| `backend/` | Railway | Node.js + Express + PostgreSQL + JWT |
-| `frontend/` | Vercel | Plain HTML + CSS + JS (no build step) |
+A full-stack task management application where teams can create projects, assign tasks, and track progress with role-based access.
 
 ---
 
-## Step 1 — Deploy backend to Railway
+## Project Overview
 
-1. Push **`backend/`** to a new GitHub repo (or use the whole bundle and set
-   Root Directory = `backend` in Railway).
-
-2. Go to [railway.app](https://railway.app) → **New Project → Deploy from GitHub repo**.
-
-3. Pick your repo. Railway will detect `package.json` and run `npm start` automatically.
-
-4. Click **+ New** → **Database → Add PostgreSQL**.
-   Railway will inject `DATABASE_URL` into your service automatically.
-
-5. In your service → **Variables**, add:
-
-   | Variable | Value |
-   |----------|-------|
-   | `JWT_SECRET` | Long random string (run: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`) |
-   | `CORS_ORIGIN` | Your Vercel URL (e.g. `https://your-app.vercel.app`) — add this after Step 2 |
-
-6. Railway will build and start the server. Open the generated URL and check:
-   ```
-   https://your-service.up.railway.app/api/healthz
-   ```
-   You should see `{"ok":true}`.
+This application helps teams manage work efficiently by allowing admins to create projects, assign tasks to members, and monitor progress through dashboards.
 
 ---
 
-## Step 2 — Deploy frontend to Vercel
+## How It Works
 
-1. Edit **`frontend/config.js`** and replace the placeholder with your Railway URL:
-   ```js
-   window.API_BASE = "https://your-service.up.railway.app/api";
-   ```
+### 1. User Signup/Login
 
-2. Push **`frontend/`** to a new GitHub repo (or the whole bundle with Root Directory = `frontend`).
+- New users create account using:
+  - Name
+  - Email
+  - Password
 
-3. Go to [vercel.com](https://vercel.com) → **New Project → Import Git Repository**.
-   - **Framework Preset:** Other
-   - **Build Command:** *(leave empty)*
-   - **Output Directory:** *(leave empty)*
+### Role Logic:
+- First registered user automatically becomes **Admin**
+- All future users become **Members**
 
-4. Click **Deploy**. You'll get a URL like `https://your-app.vercel.app`.
-
-5. Go back to **Railway** → your service → **Variables** and set:
-   ```
-   CORS_ORIGIN = https://your-app.vercel.app
-   ```
-   Then redeploy (Railway redeploys automatically when variables change).
+This prevents anyone from selecting admin role manually.
 
 ---
 
-## Step 3 — Open the app
+## 2. Admin Functionalities
 
-Visit your Vercel URL. The first person to sign up automatically becomes **admin**.
+Admins have full access to manage the system.
+
+### Admin can:
+
+### Create Projects
+Admin creates project by adding:
+- Project Name
+- Description
 
 ---
 
-## API Reference
+### Add Team Members
+Admin can add registered users into specific projects.
 
-All routes are under `/api`:
+Example:
+- Project → Ecommerce Website
+- Add members → Satyam, Rahul
 
-```
-POST   /api/auth/signup              { email, password, name, role? }
-POST   /api/auth/login               { email, password }
-GET    /api/auth/me
-GET    /api/users
-GET    /api/projects
-POST   /api/projects                 admin only
-GET    /api/projects/:id
-DELETE /api/projects/:id             admin + owner only
-POST   /api/projects/:id/members     { userId }  admin only
-DELETE /api/projects/:id/members/:userId          admin only
-GET    /api/projects/:id/tasks
-POST   /api/projects/:id/tasks       admin only
-GET    /api/tasks?status=&projectId=&assignee=me
-PATCH  /api/tasks/:id                members can only set status on their own tasks
-DELETE /api/tasks/:id                admin only
-```
+---
+
+### Create Tasks
+Admin creates tasks inside projects:
+
+Example:
+- Design Login Page
+- Build Product API
+- Create Dashboard UI
+
+Admin can assign:
+- Task title
+- Description
+- Due date
+- Assigned member
+
+---
+
+### Delete Tasks
+Admin can delete tasks if required.
+
+---
+
+### Delete Projects
+Project owner admin can delete complete project.
+
+---
+
+## 3. Member Functionalities
+
+Members have limited access.
+
+### Members can:
+
+- View projects they are assigned to
+- View tasks assigned to them
+- Update task status
+
+Members cannot:
+- Create projects
+- Add members
+- Create tasks
+- Delete tasks
+
+---
+
+## 4. Task Status Flow
+
+Every task follows:
+
+```bash
+Pending → In Progress → Completed

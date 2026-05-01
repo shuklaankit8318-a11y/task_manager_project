@@ -1,6 +1,6 @@
 // Team Task Manager — vanilla JS single-page app
 
-const API_BASE = (window.API_BASE || "/api").replace(//$/, "");
+const API_BASE = (window.API_BASE || "/api").replace(/\/$/, "");
 const TOKEN_KEY = "ttm_token";
 const USER_KEY = "ttm_user";
 

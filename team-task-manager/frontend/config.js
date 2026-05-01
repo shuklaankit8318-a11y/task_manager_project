@@ -11,4 +11,4 @@
 //   window.API_BASE = "http://localhost:8080/api";
 //
 // ─────────────────────────────────────────────────────────────────────────────
-window.API_BASE = "http://localhost:8080/api";
+window.API_BASE = "https://taskmanagerproject-production.up.railway.app/api";

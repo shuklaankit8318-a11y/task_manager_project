@@ -514,54 +514,76 @@ function statCard(label, value, danger = false) {
 // tasks via the inline select. Admins can update any task.
 function taskListView(tasks, { showProject = false } = {}) {
   const container = el("div", { class: "task-list" });
+
   tasks.forEach((task) => {
     const overdue = isOverdue(task);
+
+    // FIX: support both id and userId
+    const currentUserId = auth.user?.id || auth.user?.userId;
+
     const canEditStatus =
-      auth.isAdmin() || task.assigneeId === auth.user.id;
+      auth.isAdmin() || task.assigneeId === currentUserId;
 
     const statusCell = canEditStatus
       ? el(
           "select",
           {
             class: "status-select",
-            "data-task-id": task.id,
             value: task.status,
             onchange: async (e) => {
               const newStatus = e.target.value;
+
               try {
                 await api(`/tasks/${task.id}`, {
                   method: "PATCH",
-                  body: { status: newStatus },
+                  body: {
+                    status: newStatus,
+                  },
                 });
-                toast("Task updated");
-                // Re-render current page
+
+                toast("Task status updated successfully");
+
+                // refresh UI
                 router();
               } catch (err) {
                 toast(err.message, "error");
+
+                // revert selection if error
                 e.target.value = task.status;
               }
             },
           },
+
           el(
             "option",
-            { value: "pending", selected: task.status === "pending" },
-            "Pending",
+            {
+              value: "pending",
+              selected: task.status === "pending",
+            },
+            "Pending"
           ),
+
           el(
             "option",
             {
               value: "in_progress",
               selected: task.status === "in_progress",
             },
-            "In Progress",
+            "In Progress"
           ),
+
           el(
             "option",
-            { value: "completed", selected: task.status === "completed" },
-            "Completed",
-          ),
+            {
+              value: "completed",
+              selected: task.status === "completed",
+            },
+            "Completed"
+          )
         )
-      : el("span", { html: statusBadge(task.status) });
+      : el("span", {
+          html: statusBadge(task.status),
+        });
 
     const titleNode = el(
       "div",
@@ -574,26 +596,32 @@ function taskListView(tasks, { showProject = false } = {}) {
               class: "project-link",
               href: `#/projects/${task.projectId}`,
             },
-            task.projectName,
+            task.projectName
           )
-        : null,
+        : null
     );
 
     const dueCell = el(
       "div",
-      { class: `task-meta ${overdue ? "overdue-text" : ""}` },
-      task.dueDate ? `Due ${formatDate(task.dueDate)}` : "No due date",
+      {
+        class: `task-meta ${overdue ? "overdue-text" : ""}`,
+      },
+      task.dueDate
+        ? `Due ${formatDate(task.dueDate)}`
+        : "No due date"
     );
 
     const assigneeCell = el(
       "div",
       { class: "task-meta" },
-      task.assigneeName ? task.assigneeName : "Unassigned",
+      task.assigneeName || "Unassigned"
     );
 
     const overdueBadge = overdue
-      ? el("span", { html: statusBadge(task.status, true) })
-      : el("span", {});
+      ? el("span", {
+          html: statusBadge(task.status, true),
+        })
+      : statusCell;
 
     const adminActions = auth.isAdmin()
       ? el(
@@ -602,8 +630,12 @@ function taskListView(tasks, { showProject = false } = {}) {
             class: "btn btn-ghost btn-sm",
             onclick: async () => {
               if (!confirm(`Delete task "${task.title}"?`)) return;
+
               try {
-                await api(`/tasks/${task.id}`, { method: "DELETE" });
+                await api(`/tasks/${task.id}`, {
+                  method: "DELETE",
+                });
+
                 toast("Task deleted");
                 router();
               } catch (err) {
@@ -611,25 +643,26 @@ function taskListView(tasks, { showProject = false } = {}) {
               }
             },
           },
-          "Delete",
+          "Delete"
         )
       : el("span", {});
 
     container.appendChild(
       el(
         "div",
-        { class: `task-row ${overdue ? "overdue" : ""}` },
+        {
+          class: `task-row ${overdue ? "overdue" : ""}`,
+        },
         titleNode,
         assigneeCell,
         dueCell,
-        overdue ? overdueBadge : statusCell,
-        adminActions,
-      ),
+        overdueBadge,
+        adminActions
+      )
     );
   });
   return container;
 }
-
 // --- PROJECTS LIST ---
 async function renderProjects() {
   showLoading();

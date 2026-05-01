@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const { initSchema } = require("./db");
+const { initSchema, query } = require("./db");
 const authRoutes = require("./routes/auth");
 const projectsRoutes = require("./routes/projects");
 const tasksRoutes = require("./routes/tasks");
@@ -33,7 +33,15 @@ app.use(express.urlencoded({ extended: false }));
 app.get("/", (_req, res) =>
   res.json({ ok: true, service: "team-task-manager-api" }),
 );
-app.get("/api/healthz", (_req, res) => res.json({ ok: true }));
+app.get("/api/healthz", async (_req, res) => {
+  try {
+    await query("SELECT 1");
+    res.json({ ok: true, db: "connected" });
+  } catch (err) {
+    console.error("Healthcheck DB query failed:", err.message);
+    res.status(503).json({ ok: false, db: "unavailable", error: err.message });
+  }
+});
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 // All API routes are mounted under /api so the frontend calls /api/*.

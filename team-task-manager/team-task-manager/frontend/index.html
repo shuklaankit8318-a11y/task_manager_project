@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Task Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <!--
+      config.js sets window.API_BASE.
+      BEFORE DEPLOYING TO VERCEL: edit config.js and set your Railway URL.
+    -->
+    <script src="./config.js"></script>
+  </head>
+  <body>
+    <header id="appHeader" class="hidden">
+      <div class="header-inner">
+        <a href="#/dashboard" class="brand">Team Task Manager</a>
+        <nav>
+          <a href="#/dashboard" data-nav="dashboard">Dashboard</a>
+          <a href="#/projects" data-nav="projects">Projects</a>
+        </nav>
+        <div class="user-area">
+          <span id="userBadge" class="user-badge"></span>
+          <button id="logoutBtn" class="btn btn-ghost">Sign out</button>
+        </div>
+      </div>
+    </header>
+    <main id="app" class="container"></main>
+    <div id="toast" class="toast hidden"></div>
+    <script src="./main.js"></script>
+  </body>
+</html>

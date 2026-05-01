@@ -1,0 +1,5 @@
+[build]
+cmd = "true"
+
+[start]
+cmd = "caddy file-server --root . --listen :$PORT"

@@ -286,27 +286,37 @@ function renderLogin() {
 function renderSignup() {
   document.getElementById("appHeader").classList.add("hidden");
   app.innerHTML = "";
+
   const form = el(
     "form",
     {
       onsubmit: async (e) => {
         e.preventDefault();
+
         const name = form.querySelector("[name=name]").value;
         const email = form.querySelector("[name=email]").value;
         const password = form.querySelector("[name=password]").value;
-        const role = form.querySelector("[name=role]").value;
+
         const submitBtn = form.querySelector("button[type=submit]");
         const errBox = form.querySelector(".form-error");
+
         errBox.classList.add("hidden");
         submitBtn.disabled = true;
+
         try {
           const result = await api("/auth/signup", {
             method: "POST",
-            body: { name, email, password, role },
+            body: {
+              name,
+              email,
+              password
+            },
           });
+
           auth.login(result.token, result.user);
           toast(`Account created. Welcome, ${result.user.name}`);
           location.hash = "#/dashboard";
+
         } catch (err) {
           errBox.textContent = err.message;
           errBox.classList.remove("hidden");
@@ -315,13 +325,20 @@ function renderSignup() {
         }
       },
     },
+
     el("div", { class: "form-error hidden" }),
+
     el(
       "div",
       { class: "field" },
       el("label", {}, "Full name"),
-      el("input", { type: "text", name: "name", required: "true" }),
+      el("input", {
+        type: "text",
+        name: "name",
+        required: true
+      })
     ),
+
     el(
       "div",
       { class: "field" },
@@ -329,10 +346,10 @@ function renderSignup() {
       el("input", {
         type: "email",
         name: "email",
-        required: "true",
-        autocomplete: "email",
-      }),
+        required: true
+      })
     ),
+
     el(
       "div",
       { class: "field" },
@@ -340,32 +357,25 @@ function renderSignup() {
       el("input", {
         type: "password",
         name: "password",
-        required: "true",
-        minlength: "6",
-        autocomplete: "new-password",
-      }),
+        required: true,
+        minlength: "6"
+      })
     ),
-    el(
-      "div",
-      { class: "field" },
-      el("label", {}, "Role"),
-      el(
-        "select",
-        { name: "role" },
-        el("option", { value: "member" }, "Member — view assigned tasks"),
-        el("option", { value: "admin" }, "Admin — create projects, assign tasks"),
-      ),
-    ),
+
     el(
       "p",
       { class: "form-help" },
-      "Tip: the very first user always becomes admin automatically.",
+      "First registered user becomes Admin automatically. All others will join as Members."
     ),
+
     el(
       "button",
-      { type: "submit", class: "btn btn-primary btn-block" },
-      "Create account",
-    ),
+      {
+        type: "submit",
+        class: "btn btn-primary btn-block"
+      },
+      "Create Account"
+    )
   );
 
   app.appendChild(
@@ -375,13 +385,14 @@ function renderSignup() {
       el("h1", {}, "Create account"),
       el("p", { class: "subtitle" }, "Start managing your team's work."),
       form,
+
       el(
         "p",
         { class: "auth-switch" },
         "Already have an account? ",
-        el("a", { href: "#/login" }, "Sign in"),
-      ),
-    ),
+        el("a", { href: "#/login" }, "Sign in")
+      )
+    )
   );
 }
 

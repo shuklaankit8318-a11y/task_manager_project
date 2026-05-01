@@ -6,133 +6,206 @@ const { signToken, requireAuth } = require("../middleware/auth");
 
 const router = Router();
 
-// ── POST /api/auth/signup ─────────────────────────────────────────────────────
+
+// ================= SIGNUP =================
 router.post("/auth/signup", async (req, res) => {
   try {
-    const { email, password, name, role } = req.body || {};
+    const { email, password, name } = req.body || {};
 
+    // validation
     if (!email || !password || !name) {
-      return res
-        .status(400)
-        .json({ error: "email, password, and name are required" });
+      return res.status(400).json({
+        error: "email, password, and name are required",
+      });
     }
+
     if (typeof password !== "string" || password.length < 6) {
-      return res
-        .status(400)
-        .json({ error: "Password must be at least 6 characters" });
+      return res.status(400).json({
+        error: "Password must be at least 6 characters",
+      });
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
-    // Check for duplicate email
+    // check duplicate email
     const existing = await query(
       "SELECT id FROM users WHERE email = $1",
-      [normalizedEmail],
+      [normalizedEmail]
     );
+
     if (existing.rows.length > 0) {
-      return res
-        .status(409)
-        .json({ error: "An account with that email already exists" });
+      return res.status(409).json({
+        error: "Account already exists with this email",
+      });
     }
 
-    // First user ever → admin. Otherwise honour requested role or default to member.
-    const { rows: [{ c }] } = await query(
-      "SELECT COUNT(*)::int AS c FROM users",
+    // First user = admin
+    // All others = member
+    const {
+      rows: [{ c }],
+    } = await query(
+      "SELECT COUNT(*)::int AS c FROM users"
     );
+
     let finalRole = "member";
+
     if (c === 0) {
       finalRole = "admin";
-    } else if (role === "admin" || role === "member") {
-      finalRole = role;
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
     const id = randomUUID();
 
-    const { rows: [row] } = await query(
+    const {
+      rows: [user],
+    } = await query(
       `INSERT INTO users (id, email, name, password_hash, role)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, email, name, role`,
-      [id, normalizedEmail, String(name).trim(), hash, finalRole],
+      [
+        id,
+        normalizedEmail,
+        String(name).trim(),
+        hashedPassword,
+        finalRole,
+      ]
     );
 
     const token = signToken({
-      userId: row.id,
-      email: row.email,
-      role: row.role,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
     });
-    res.status(201).json({ token, user: row });
+
+    return res.status(201).json({
+      token,
+      user,
+    });
+
   } catch (err) {
-    console.error("signup error:", err.message);
-    res.status(500).json({ error: "Failed to create account" });
+    console.error("Signup error:", err.message);
+
+    return res.status(500).json({
+      error: "Failed to create account",
+    });
   }
 });
 
-// ── POST /api/auth/login ──────────────────────────────────────────────────────
+
+// ================= LOGIN =================
 router.post("/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
+
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ error: "email and password are required" });
+      return res.status(400).json({
+        error: "email and password are required",
+      });
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
-    const { rows: [row] } = await query(
-      "SELECT id, email, name, role, password_hash FROM users WHERE email = $1",
-      [normalizedEmail],
+
+    const {
+      rows: [user],
+    } = await query(
+      `SELECT id, email, name, role, password_hash
+       FROM users
+       WHERE email = $1`,
+      [normalizedEmail]
     );
 
-    if (!row) {
-      return res.status(401).json({ error: "Invalid email or password" });
+    if (!user) {
+      return res.status(401).json({
+        error: "Invalid email or password",
+      });
     }
-    const ok = await bcrypt.compare(String(password), row.password_hash);
-    if (!ok) {
-      return res.status(401).json({ error: "Invalid email or password" });
+
+    const isValidPassword = await bcrypt.compare(
+      String(password),
+      user.password_hash
+    );
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        error: "Invalid email or password",
+      });
     }
 
     const token = signToken({
-      userId: row.id,
-      email: row.email,
-      role: row.role,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
     });
-    res.json({
+
+    return res.json({
       token,
-      user: { id: row.id, email: row.email, name: row.name, role: row.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     });
+
   } catch (err) {
-    console.error("login error:", err.message);
-    res.status(500).json({ error: "Login failed" });
+    console.error("Login error:", err.message);
+
+    return res.status(500).json({
+      error: "Login failed",
+    });
   }
 });
 
-// ── GET /api/auth/me ──────────────────────────────────────────────────────────
+
+// ================= CURRENT USER =================
 router.get("/auth/me", requireAuth, async (req, res) => {
   try {
-    const { rows: [row] } = await query(
-      "SELECT id, email, name, role FROM users WHERE id = $1",
-      [req.user.userId],
+    const {
+      rows: [user],
+    } = await query(
+      `SELECT id, email, name, role
+       FROM users
+       WHERE id = $1`,
+      [req.user.userId]
     );
-    if (!row) return res.status(404).json({ error: "User not found" });
-    res.json(row);
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    return res.json(user);
+
   } catch (err) {
-    console.error("me error:", err.message);
-    res.status(500).json({ error: "Failed to fetch user" });
+    console.error("Me API error:", err.message);
+
+    return res.status(500).json({
+      error: "Failed to fetch user",
+    });
   }
 });
 
-// ── GET /api/users ────────────────────────────────────────────────────────────
+
+// ================= GET ALL USERS =================
 router.get("/users", requireAuth, async (_req, res) => {
   try {
     const { rows } = await query(
-      "SELECT id, email, name, role FROM users ORDER BY name",
+      `SELECT id, email, name, role
+       FROM users
+       ORDER BY name`
     );
-    res.json(rows);
+
+    return res.json(rows);
+
   } catch (err) {
-    console.error("users error:", err.message);
-    res.status(500).json({ error: "Failed to fetch users" });
+    console.error("Users API error:", err.message);
+
+    return res.status(500).json({
+      error: "Failed to fetch users",
+    });
   }
 });
+
 
 module.exports = router;
